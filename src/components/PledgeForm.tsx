@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Shield, Leaf } from "lucide-react";
 import { toast } from "sonner";
+import { createPledge } from "@/lib/pledgeService";
 
 interface PledgeFormProps {
   onSubmit: (data: any) => void;
@@ -70,7 +71,7 @@ const PledgeForm = ({ onSubmit }: PledgeFormProps) => {
     commitments: [] as string[],
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name || !formData.email || !formData.mobile || !formData.profileType) {
@@ -83,17 +84,32 @@ const PledgeForm = ({ onSubmit }: PledgeFormProps) => {
       return;
     }
 
-    onSubmit(formData);
-    
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      mobile: "",
-      state: "",
-      profileType: "",
-      commitments: [],
-    });
+    try {
+      const pledge = await createPledge({
+        name: formData.name,
+        email: formData.email,
+        mobile: formData.mobile,
+        state: formData.state,
+        profileType: formData.profileType as 'Student' | 'Working Professional' | 'Other',
+        commitments: formData.commitments
+      });
+
+      toast.success("Thank you for your pledge!");
+      onSubmit(pledge);
+      
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        mobile: "",
+        state: "",
+        profileType: "",
+        commitments: [],
+      });
+    } catch (error) {
+      console.error('Error submitting pledge:', error);
+      toast.error("Failed to submit pledge. Please try again.");
+    }
   };
 
   const toggleCommitment = (commitment: string) => {

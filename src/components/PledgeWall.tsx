@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Heart, Search } from "lucide-react";
+import { getPledges } from "@/lib/pledgeService";
 
 interface Pledge {
   id: string;
@@ -12,13 +13,28 @@ interface Pledge {
   commitmentCount: number;
 }
 
-interface PledgeWallProps {
-  pledges: Pledge[];
-}
-
-const PledgeWall = ({ pledges }: PledgeWallProps) => {
+const PledgeWall = () => {
+  const [pledges, setPledges] = useState<Pledge[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadPledges = async () => {
+      try {
+        const data = await getPledges();
+        setPledges(data);
+      } catch (err) {
+        console.error('Error loading pledges:', err);
+        setError('Failed to load pledges. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPledges();
+  }, []);
 
   const filteredPledges = pledges.filter(pledge => {
     const matchesSearch = pledge.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,7 +111,19 @@ const PledgeWall = ({ pledges }: PledgeWallProps) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredPledges.length === 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                        Loading pledges...
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                        {error}
+                      </td>
+                    </tr>
+                  ) : filteredPledges.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                         {pledges.length === 0 
